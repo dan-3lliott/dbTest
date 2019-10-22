@@ -8,17 +8,19 @@ import java.util.List;
 import java.util.ArrayList;
 
 public class Main extends JFrame {
-    public final String[] brands = new String[]{"Trek", "Santa Cruz", "YT", "Commencal"};
+    public final String[] brands = new String[]{"Trek", "Santa Cruz", "YT", "Commencal", "Transition", "Specialized", "Kona", "Norco", "Rocky Mountain", "Marin"};
     private JTabbedPane mainPane = new JTabbedPane();
     private JPanel viewPanel = new JPanel();
     private JPanel addPanel = new JPanel();
     private JComboBox brandBox = new JComboBox(brands);
-    private JTextField modelField = new JTextField(20);
+    private JTextField modelField = new JTextField(15);
     private JTextField priceField = new JTextField(8);
     private JButton confirmButton = new JButton("Confirm");
     private JPopupMenu clickMenu = new JPopupMenu();
     private JMenuItem editMenuItem = new JMenuItem("Edit Product");
     private JMenuItem deleteMenuItem = new JMenuItem("Delete Product");
+    private JPanel clearPanel = new JPanel();
+    private JButton clearButton = new JButton("CLEAR INVENTORY");
     private DefaultTableModel viewModel = new DefaultTableModel(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}) {
         @Override
         public boolean isCellEditable(int row, int column) {
@@ -39,7 +41,6 @@ public class Main extends JFrame {
                 catch (Exception ex) {
                     JOptionPane.showMessageDialog(null, "Please make sure all fields have a value before proceeding.");
                 }
-                viewModel.setDataVector(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}); //update table locally
             }
         });
         editMenuItem.addActionListener(new ActionListener() {
@@ -55,7 +56,13 @@ public class Main extends JFrame {
                     } catch (Exception ex) {
                         JOptionPane.showMessageDialog(null, "Error deleting product from database.");
                     }
-                    viewModel.setDataVector(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}); //update table locally
+                }
+            }
+        });
+        clearButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent ev) {
+                if (JOptionPane.showInputDialog(null, "You are about to permanently clear all products from inventory. Type 'yEs' to continue.", "Warning", JOptionPane.WARNING_MESSAGE).equals("yEs")) {
+                    truncate();
                 }
             }
         });
@@ -91,10 +98,18 @@ public class Main extends JFrame {
         mainPane.add(viewPanel, "View & Edit Inventory");
         //addpanel
         addPanel.add(brandBox);
+        addPanel.add(new JLabel("Model:"));
         addPanel.add(modelField);
+        addPanel.add(new JLabel("Price ($):"));
         addPanel.add(priceField);
         addPanel.add(confirmButton);
         mainPane.add(addPanel, "Add Products");
+        //clearpanel
+        clearButton.setBorder(BorderFactory.createLineBorder(java.awt.Color.red));
+        clearButton.setPreferredSize(new Dimension(400, 380));
+        clearPanel.add(new JLabel("WARNING: This will permanently clear all products from inventory."));
+        clearPanel.add(clearButton);
+        mainPane.add(clearPanel, "Clear Inventory");
     }
     public Object[][] getTableContents() {
         List<Object[]> tableContents = new ArrayList<Object[]>();
@@ -125,8 +140,8 @@ public class Main extends JFrame {
             Connection conn = null;
             conn = DriverManager.getConnection("jdbc:mysql://localhost/dbtest","root", "");
             conn.createStatement().execute("INSERT INTO bikes (brand, model, price) " + "VALUES ('" + brand + "', '" + model + "', " + price + ")");
-            System.out.println("statement executed");
             conn.close();
+            viewModel.setDataVector(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}); //update table locally
         }
         catch(Exception e) {
             System.out.println(e.getMessage());
@@ -139,8 +154,8 @@ public class Main extends JFrame {
             Connection conn = null;
             conn = DriverManager.getConnection("jdbc:mysql://localhost/dbtest","root", "");
             conn.createStatement().execute("UPDATE bikes " + "SET brand = '" + brand + "', model = '" + model + "', price = " + price + " WHERE id = " + id);
-            System.out.println("statement executed");
             conn.close();
+            viewModel.setDataVector(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}); //update table locally
         }
         catch(Exception e) {
             System.out.println(e.getMessage());
@@ -156,7 +171,7 @@ public class Main extends JFrame {
         JPanel editPanel = new JPanel();
         JComboBox brandBox = new JComboBox(brands);
         brandBox.setSelectedItem(viewModel.getValueAt(row, 1));
-        JTextField modelField = new JTextField(viewModel.getValueAt(row, 2).toString(), 20);
+        JTextField modelField = new JTextField(viewModel.getValueAt(row, 2).toString(), 15);
         JTextField priceField = new JTextField(viewModel.getValueAt(row, 3).toString(), 8);
         JButton confirmButton = new JButton("Confirm");
         confirmButton.addActionListener(new ActionListener() {
@@ -168,12 +183,13 @@ public class Main extends JFrame {
                     JOptionPane.showMessageDialog(null, "Please make sure all fields have a value before proceeding.");
                     System.out.println(ex.getMessage());
                 }
-                viewModel.setDataVector(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}); //update table locally
                 editWindow.dispose();
             }
         });
         editPanel.add(brandBox);
+        editPanel.add(new JLabel("Model:"));
         editPanel.add(modelField);
+        editPanel.add(new JLabel("Price ($):"));
         editPanel.add(priceField);
         editPanel.add(confirmButton);
         editWindow.add(editPanel);
@@ -186,8 +202,22 @@ public class Main extends JFrame {
             Connection conn = null;
             conn = DriverManager.getConnection("jdbc:mysql://localhost/dbtest","root", "");
             conn.createStatement().execute("DELETE FROM bikes WHERE id = " + id);
-            System.out.println("statement executed");
             conn.close();
+            viewModel.setDataVector(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}); //update table locally
+        }
+        catch(Exception e) {
+            System.out.println(e.getMessage());
+        }
+    }
+    public void truncate() {
+        try
+        {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection conn = null;
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/dbtest","root", "");
+            conn.createStatement().execute("TRUNCATE TABLE bikes");
+            conn.close();
+            viewModel.setDataVector(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}); //update table locally
         }
         catch(Exception e) {
             System.out.println(e.getMessage());
