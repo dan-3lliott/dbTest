@@ -16,6 +16,9 @@ public class Main extends JFrame {
     private JTextField modelField = new JTextField(20);
     private JTextField priceField = new JTextField(8);
     private JButton confirmButton = new JButton("Confirm");
+    private JPopupMenu clickMenu = new JPopupMenu();
+    private JMenuItem editMenuItem = new JMenuItem("Edit Product");
+    private JMenuItem deleteMenuItem = new JMenuItem("Delete Product");
     private DefaultTableModel viewModel = new DefaultTableModel(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}) {
         @Override
         public boolean isCellEditable(int row, int column) {
@@ -29,6 +32,9 @@ public class Main extends JFrame {
                 try {
                     submit(brandBox.getSelectedItem().toString(), modelField.getText(), Integer.parseInt(priceField.getText()));
                     JOptionPane.showMessageDialog(null, "Product successfully added to inventory.");
+                    brandBox.setSelectedIndex(0);
+                    modelField.setText("");
+                    priceField.setText("");
                 }
                 catch (Exception ex) {
                     JOptionPane.showMessageDialog(null, "Please make sure all fields have a value before proceeding.");
@@ -36,12 +42,34 @@ public class Main extends JFrame {
                 viewModel.setDataVector(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}); //update table locally
             }
         });
+        editMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent ev) {
+                edit(viewTable.getSelectedRow());
+            }
+        });
+        deleteMenuItem.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent ev) {
+                if (JOptionPane.showConfirmDialog(null, "You are about to permanently delete this product from inventory. Continue?", "Warning", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == 0) {
+                    try {
+                        delete(Integer.parseInt(viewTable.getValueAt(viewTable.getSelectedRow(), 0).toString()));
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(null, "Error deleting product from database.");
+                    }
+                    viewModel.setDataVector(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}); //update table locally
+                }
+            }
+        });
         viewTable.addMouseListener(new MouseAdapter() {
             public void mouseClicked(MouseEvent ev) {
                 if (SwingUtilities.isRightMouseButton(ev)) {
-                    int row = viewTable.rowAtPoint(ev.getPoint());
-                    viewTable.setRowSelectionInterval(row, row);
-                    edit(row);
+                    try {
+                        int row = viewTable.rowAtPoint(ev.getPoint());
+                        viewTable.setRowSelectionInterval(row, row);
+                        clickMenu.show(ev.getComponent(), ev.getPoint().x, ev.getPoint().y);
+                    }
+                    catch (IllegalArgumentException ex) {
+                        //do nothing, since pointer is right clicked not on a row we do not need a menu
+                    }
                 }
             }
         });
@@ -52,6 +80,9 @@ public class Main extends JFrame {
         setResizable(false);
         setLocationRelativeTo(null);
         setContentPane(mainPane);
+        //right click menu
+        clickMenu.add(editMenuItem);
+        clickMenu.add(deleteMenuItem);
         //viewpanel
         viewTable.setPreferredSize(new Dimension(400, 400));
         viewTable.setMinimumSize(new Dimension(400,400));
@@ -147,6 +178,20 @@ public class Main extends JFrame {
         editPanel.add(confirmButton);
         editWindow.add(editPanel);
         editWindow.setVisible(true);
+    }
+    public void delete(int id) {
+        try
+        {
+            Class.forName("com.mysql.cj.jdbc.Driver");
+            Connection conn = null;
+            conn = DriverManager.getConnection("jdbc:mysql://localhost/dbtest","root", "");
+            conn.createStatement().execute("DELETE FROM bikes WHERE id = " + id);
+            System.out.println("statement executed");
+            conn.close();
+        }
+        catch(Exception e) {
+            System.out.println(e.getMessage());
+        }
     }
     public static void main(String[] args) {
         EventQueue.invokeLater(new Runnable() {
