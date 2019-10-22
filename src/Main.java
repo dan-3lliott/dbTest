@@ -21,6 +21,7 @@ public class Main extends JFrame {
     private JMenuItem deleteMenuItem = new JMenuItem("Delete Product");
     private JPanel clearPanel = new JPanel();
     private JButton clearButton = new JButton("CLEAR INVENTORY");
+    private ImageIcon icon = new ImageIcon("icon.png");
     private DefaultTableModel viewModel = new DefaultTableModel(getTableContents(), new String[]{"ID", "Brand", "Model", "MSRP"}) {
         @Override
         public boolean isCellEditable(int row, int column) {
@@ -80,7 +81,8 @@ public class Main extends JFrame {
                 }
             }
         });
-        setTitle("Database Test");
+        setTitle("Bike Shop Inventory Management");
+        setIconImage(icon.getImage());
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
         setPreferredSize(new Dimension(500, 500));
         setMinimumSize(new Dimension(500, 500));
